@@ -13,11 +13,22 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateSocialMediaPostsInputSchema = z.object({
-  productInformation: z
-    .string()
-    .describe('Detailed information about the product or service.'),
-  targetAudience: z.string().describe('The intended audience for the social media posts.'),
-  keyMessage: z.string().describe('The core message to be conveyed in the posts.'),
+  product: z.object({
+    name: z.string().describe('Name of the product or service.'),
+    one_line_description: z.string().describe('A concise one-line description of the product or service.'),
+    problem_solved: z.string().describe('The specific problem the product or service addresses for the user.'),
+    benefits: z.array(z.string()).describe('A list of key benefits the product or service offers.'),
+    differentiator: z.string().describe('What makes this product or service unique compared to competitors.'),
+  }).describe('Detailed information about the product or service.'),
+
+  audience: z.object({
+    target: z.string().describe('The intended target audience for the social media posts.'),
+    desired_action: z.string().describe('The desired action from the audience (e.g., Visit our website, Learn more).'),
+    emotion_to_trigger: z.string().describe('The primary emotion the posts should aim to evoke in the audience (e.g., excitement, trust, curiosity).'),
+  }).describe('Details about the target audience and desired engagement.'),
+
+  keyMessage: z.string().describe('The core message to be conveyed in the posts, overarching the product and audience details.'), // Kept at top level as it's a general message
+
   socialPlatform: z
     .enum([
       'Facebook',
@@ -28,11 +39,11 @@ const GenerateSocialMediaPostsInputSchema = z.object({
       'YouTube',
     ])
     .describe('The specific social media platform for the posts.'),
-  callToAction: z.string().describe('The desired action from the audience (e.g., Visit our website).'),
+
   formatConstraints: z
     .string()
     .optional()
-    .describe('Any specific formatting requirements for the platform (e.g., character limits).'),
+    .describe('Any specific formatting requirements for the platform (e.g., character limits, hashtag usage).'),
 });
 
 export type GenerateSocialMediaPostsInput = z.infer<typeof GenerateSocialMediaPostsInputSchema>;
@@ -53,19 +64,29 @@ export async function generateSocialMediaPosts(
 
 const prompt = ai.definePrompt({
   name: 'generateSocialMediaPostsPrompt',
-  input: {schema: GenerateSocialMediaPostsInputSchema},
-  output: {schema: GenerateSocialMediaPostsOutputSchema},
-  prompt: `You are a social media marketing expert. Generate social media posts based on the following information for the specified platform, adhering to any format constraints and including a clear call to action.
+  input: { schema: GenerateSocialMediaPostsInputSchema }, // Use the updated schema
+  output: { schema: GenerateSocialMediaPostsOutputSchema },
+  prompt: `You are a social media marketing expert. Generate social media posts based on the following information for the specified platform. Adhere to any format constraints and ensure each post incorporates the desired call to action.
 
-Product Information: {{{productInformation}}}
-Target Audience: {{{targetAudience}}}
-Key Message: {{{keyMessage}}}
-Social Platform: {{{socialPlatform}}}
-Call to Action: {{{callToAction}}}
-Format Constraints: {{{formatConstraints}}}
+Product Information:
+- Name: {{{product.name}}}
+- One-Line Description: {{{product.one_line_description}}}
+- Problem Solved: {{{product.problem_solved}}}
+- Key Benefits: {{{product.benefits}}} (Present these benefits compellingly)
+- Differentiator: {{{product.differentiator}}}
 
-Generate 3 different posts. Return a JSON array of strings.
-`, 
+Audience & Engagement:
+- Target Audience: {{{audience.target}}}
+- Desired Action (Call to Action): {{{audience.desired_action}}}
+- Emotion to Trigger: {{{audience.emotion_to_trigger}}}
+
+Core Campaign Details:
+- Overarching Key Message: {{{keyMessage}}}
+- Social Platform: {{{socialPlatform}}}
+- Format Constraints: {{{formatConstraints}}}
+
+Generate 3 distinct social media posts. Each post should be tailored to the specified platform and audience, clearly convey the key message, and strongly feature the call to action. Return a JSON array of strings, where each string is a complete social media post.
+`,
 });
 
 const generateSocialMediaPostsFlow = ai.defineFlow(
