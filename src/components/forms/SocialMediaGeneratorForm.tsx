@@ -104,24 +104,42 @@ export function SocialMediaGeneratorForm({ onSocialMediaPostsGenerated, setIsLoa
               </FormItem>
             )}
           />
-          <FormField
+         <FormField
             control={form.control}
-            name="product.benefits"
+            name="product.benefits" // field.value will be an array of strings here
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Key Benefits</FormLabel>
                 <FormControl>
                   <Textarea
                     rows={3}
-                    placeholder="List key benefits (e.g., saves time, increases productivity). Enter each benefit on a new line or comma-separated."
-                    {...field}
-                    // If benefits is an array, you might need to handle joining/splitting:
-                    // value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
-                    // onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))}
-                    // For simplicity, assuming schema or onSubmit handles string to array.
+                    placeholder="List key benefits (e.g., saves time, increases productivity). Enter each benefit on a new line or separated by commas."
+                    // Explicitly pass down react-hook-form's props that Textarea can use directly or that RHF needs
+                    name={field.name}
+                    onBlur={field.onBlur} // For validation triggers
+                    ref={field.ref}       // For RHF to connect to the input element
+
+                    // Convert the array to a string for display in the Textarea
+                    // Join by ", " for a nice display. If field.value is undefined or not an array, default to an empty string.
+                    value={Array.isArray(field.value) ? field.value.join(', ') : ''}
+                    
+                    // When the Textarea value changes, parse the input string into an array of strings
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                      const inputText = e.target.value;
+                      // Split the string by commas or newlines
+                      // Then, trim whitespace from each part
+                      // Finally, filter out any empty strings that might result from multiple commas/newlines or trailing ones
+                      const benefitsArray = inputText
+                        .split(/,|\n/) // Split by comma OR newline
+                        .map(s => s.trim())
+                        .filter(s => s); // Removes empty strings (e.g., from "apple,,banana" or "apple\n\nbanana")
+                      
+                      // Update the form state with the new array of benefits
+                      field.onChange(benefitsArray);
+                    }}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage /> {/* Displays validation messages for product.benefits */}
               </FormItem>
             )}
           />
